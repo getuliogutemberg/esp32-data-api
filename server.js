@@ -1,55 +1,92 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const sqlite3 = require('sqlite3').verbose();
+const { Pool } = require('pg');
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 const port = 3000;
 
-const db = new sqlite3.Database(':memory:');
-
-db.serialize(() => {
-  db.run("CREATE TABLE data (timestamp TEXT, umidade REAL, temperatura REAL, luz REAL)");
+const pool = new Pool({
+  connectionString: 'postgresql://memory_sp7i_user:hHkqDGZF86grDUhAWYQ77JvyDrB4FhTA@dpg-cqbq5qmehbks73dt9mu0-a/memory_sp7i'
 });
 
+pool.connect((err) => {
+  if (err) {
+    console.error('Erro ao conectar ao banco de dados:', err);
+  } else {
+    console.log('Conectado ao banco de dados');
+  }
+});
+
+const createTable = async () => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS data (
+        id SERIAL PRIMARY KEY,
+        timestamp TIMESTAMP,
+        umidade REAL,
+        temperatura REAL,
+        luz REAL
+      )
+    `);
+    console.log('Tabela criada ou já existe');
+  } catch (err) {
+    console.error('Erro ao criar tabela:', err);
+  }
+};
+
+// Cria a tabela ao iniciar o servidor
+createTable();
+
 // Endpoint para adicionar novas leituras de dados
-app.post('/data', (req, res) => {
-  const data = req.body;
+app.post('/data', async (req, res) => {
+  const { umidade, temperatura, luz } = req.body;
   
-  if (data) {
-    const stmt = db.prepare("INSERT INTO data (timestamp, umidade, temperatura, luz) VALUES (?, ?, ?, ?)");
-    stmt.run(new Date().toISOString(), data.umidade, data.temperatura, data.luz);
-    stmt.finalize();
-    res.status(201).json(data);
+  if (umidade !== undefined && temperatura !== undefined && luz !== undefined) {
+    const timestamp = new Date();
+    
+    try {
+      const result = await pool.query(
+        'INSERT INTO data (timestamp, umidade, temperatura, luz) VALUES ($1, $2, $3, $4) RETURNING *',
+        [timestamp, umidade, temperatura, luz]
+      );
+      res.status(201).json(result.rows[0]);
+    } catch (err) {
+      console.error('Erro ao inserir dados:', err);
+      res.status(500).json({ error: 'Erro ao inserir dados' });
+    }
   } else {
     res.status(400).json({ error: 'Invalid data' });
   }
 });
 
 // Endpoint para obter a última leitura
-app.get('/data/last', (req, res) => {
-  db.get("SELECT * FROM data ORDER BY rowid DESC LIMIT 1", (err, row) => {
-    if (err) {
-      res.status(500).json({ error: err.message });
-    } else if (row) {
-      res.json(row);
+app.get('/data/last', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM data ORDER BY id DESC LIMIT 1');
+    
+    if (result.rows.length > 0) {
+      res.json(result.rows[0]);
     } else {
       res.status(404).json({ error: 'No data available' });
     }
-  });
+  } catch (err) {
+    console.error('Erro ao buscar última leitura:', err);
+    res.status(500).json({ error: 'Erro ao buscar última leitura' });
+  }
 });
 
 // Endpoint para obter todas as leituras
-app.get('/data', (req, res) => {
-  db.all("SELECT * FROM data", (err, rows) => {
-    if (err) {
-      res.status(500).json({ error: err.message });
-    } else {
-      res.json(rows);
-    }
-  });
+app.get('/data', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM data ORDER BY timestamp');
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Erro ao buscar todas as leituras:', err);
+    res.status(500).json({ error: 'Erro ao buscar todas as leituras' });
+  }
 });
 
 // Inicia o servidor
