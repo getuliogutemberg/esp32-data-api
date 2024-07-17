@@ -1,27 +1,28 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const sqlite3 = require('sqlite3').verbose();
 
 const app = express();
 app.use(cors());
+app.use(bodyParser.json());
 const port = 3000;
 
-let dataStore = [];
+const db = new sqlite3.Database(':memory:');
 
-// Middleware para analisar o corpo das requisições como JSON
-app.use(bodyParser.json());
+db.serialize(() => {
+  db.run("CREATE TABLE data (timestamp TEXT, umidade REAL, temperatura REAL, luz REAL)");
+});
 
 // Endpoint para adicionar novas leituras de dados
 app.post('/data', (req, res) => {
-    // Cria uma nova leitura de dados
-    console.log('Data received:', req.body);
   const data = req.body;
   
   if (data) {
-      data.timestamp = new Date();
-      dataStore.push(data);
-      res.status(201).json(data);
-
+    const stmt = db.prepare("INSERT INTO data (timestamp, umidade, temperatura, luz) VALUES (?, ?, ?, ?)");
+    stmt.run(new Date().toISOString(), data.umidade, data.temperatura, data.luz);
+    stmt.finalize();
+    res.status(201).json(data);
   } else {
     res.status(400).json({ error: 'Invalid data' });
   }
@@ -29,18 +30,26 @@ app.post('/data', (req, res) => {
 
 // Endpoint para obter a última leitura
 app.get('/data/last', (req, res) => {
-  console.log('Last data received:', dataStore[dataStore.length - 1]);
-  if (dataStore.length > 0) {
-    res.json(dataStore[dataStore.length - 1]);
-  } else {
-    res.status(404).json({ error: 'No data available' });
-  }
+  db.get("SELECT * FROM data ORDER BY rowid DESC LIMIT 1", (err, row) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+    } else if (row) {
+      res.json(row);
+    } else {
+      res.status(404).json({ error: 'No data available' });
+    }
+  });
 });
 
 // Endpoint para obter todas as leituras
 app.get('/data', (req, res) => {
-  console.log('All data received:', dataStore);
-  res.json(dataStore);
+  db.all("SELECT * FROM data", (err, rows) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+    } else {
+      res.json(rows);
+    }
+  });
 });
 
 // Inicia o servidor
