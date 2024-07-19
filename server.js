@@ -2,6 +2,8 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const { Pool } = require('pg');
+const mqtt = require('mqtt');
+const WebSocket = require('ws');
 
 const app = express();
 app.use(cors());
@@ -40,7 +42,53 @@ const createTable = async () => {
 // Cria a tabela ao iniciar o servidor
 createTable();
 
-// Endpoint para adicionar novas leituras de dados
+// Configuração do cliente MQTT
+const mqttClient = mqtt.connect('mqtt://test.mosquitto.org');
+
+mqttClient.on('connect', () => {
+  console.log('Conectado ao broker MQTT');
+  mqttClient.subscribe('esp32/sensores', (err) => {
+    if (err) {
+      console.error('Erro ao se inscrever no tópico MQTT:', err);
+    }
+  });
+});
+
+mqttClient.on('message', async (topic, message) => {
+  const payload = JSON.parse(message.toString());
+  const { umidade, temperatura, luz } = payload;
+  const timestamp = new Date();
+
+  try {
+    const result = await pool.query(
+      'INSERT INTO data (timestamp, umidade, temperatura, luz) VALUES ($1, $2, $3, $4) RETURNING *',
+      [timestamp, umidade, temperatura, luz]
+    );
+    const insertedData = result.rows[0];
+    // Enviar dados para todos os clientes conectados via WebSocket
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify(insertedData));
+      }
+    });
+  } catch (err) {
+    console.error('Erro ao inserir dados no banco de dados:', err);
+  }
+});
+
+// Configuração do WebSocket
+const server = require('http').createServer(app);
+const wss = new WebSocket.Server({ server });
+
+wss.on('connection', (ws) => {
+  console.log('Novo cliente conectado via WebSocket');
+  ws.on('close', () => {
+    console.log('Cliente desconectado');
+  });
+});
+
+// Endpoints REST existentes
+
 app.post('/data', async (req, res) => {
   const { umidade, temperatura, luz } = req.body;
   
@@ -62,7 +110,6 @@ app.post('/data', async (req, res) => {
   }
 });
 
-// Endpoint para obter a última leitura
 app.get('/data/last', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM data ORDER BY id DESC LIMIT 1');
@@ -78,7 +125,6 @@ app.get('/data/last', async (req, res) => {
   }
 });
 
-// Endpoint para obter todas as leituras
 app.get('/data', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM data ORDER BY timestamp');
@@ -89,7 +135,6 @@ app.get('/data', async (req, res) => {
   }
 });
 
-// Endpoint para apagar todas as leituras
 app.delete('/data', async (req, res) => {
   try {
     await pool.query('DELETE FROM data');
@@ -100,7 +145,6 @@ app.delete('/data', async (req, res) => {
   }
 });
 
-// Endpoint para coletar token
 app.get('/token', async (req, res) => {
   try {
     const result = '70yrmv'
@@ -111,8 +155,7 @@ app.get('/token', async (req, res) => {
   }
 });
 
-
 // Inicia o servidor
-app.listen(port, () => {
+server.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });
