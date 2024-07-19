@@ -103,7 +103,7 @@ app.delete('/data', async (req, res) => {
 // Endpoint para coletar token
 app.get('/token', async (req, res) => {
   try {
-    const result = '70yrmv'
+    const result = 'https://www.youtube.com/watch?v=mFR_uCIqJRg?autoplay=1&loop=1&playlist=zbo6jUGrwdk&playsinline=1&mute=1&controls=0&showinfo=0'
     res.json(result);
   } catch (err) {
     console.error('Erro ao buscar token:', err);
