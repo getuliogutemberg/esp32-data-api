@@ -89,6 +89,29 @@ app.get('/data', async (req, res) => {
   }
 });
 
+// Endpoint para apagar todas as leituras
+app.delete('/data', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM data');
+    res.sendStatus(204);
+  } catch (err) {
+    console.error('Erro ao apagar todas as leituras:', err);
+    res.status(500).json({ error: 'Erro ao apagar todas as leituras' });
+  }
+});
+
+// Endpoint para coletar token
+app.get('/token', async (req, res) => {
+  try {
+    const result = 'wmlgqm'
+    res.json(result);
+  } catch (err) {
+    console.error('Erro ao buscar token:', err);
+    res.status(500).json({ error: 'Erro ao buscar token' });
+  }
+});
+
+
 // Inicia o servidor
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
