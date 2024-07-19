@@ -103,7 +103,7 @@ app.delete('/data', async (req, res) => {
 // Endpoint para coletar token
 app.get('/token', async (req, res) => {
   try {
-    const result = 'wmlgqm'
+    const result = '70yrmv'
     res.json(result);
   } catch (err) {
     console.error('Erro ao buscar token:', err);
