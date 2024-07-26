@@ -56,7 +56,7 @@ mqttClient.on('connect', () => {
 
 mqttClient.on('message', async (topic, message) => {
   const payload = JSON.parse(message.toString());
-  const { umidade, temperatura, luz } = payload;
+  const { umidade=0, temperatura=0, luz=0 } = payload;
   const timestamp = new Date();
 
   try {
@@ -90,24 +90,20 @@ wss.on('connection', (ws) => {
 // Endpoints REST existentes
 
 app.post('/data', async (req, res) => {
-  const { umidade, temperatura, luz } = req.body;
+  const { umidade=0, temperatura=0, luz=0 } = req.body;
+  const timestamp = new Date();
   
-  if (umidade !== undefined && temperatura !== undefined && luz !== undefined) {
-    const timestamp = new Date();
-    
-    try {
-      const result = await pool.query(
-        'INSERT INTO data (timestamp, umidade, temperatura, luz) VALUES ($1, $2, $3, $4) RETURNING *',
-        [timestamp, umidade, temperatura, luz]
-      );
-      res.status(201).json(result.rows[0]);
-    } catch (err) {
-      console.error('Erro ao inserir dados:', err);
-      res.status(500).json({ error: 'Erro ao inserir dados' });
-    }
-  } else {
-    res.status(400).json({ error: 'Invalid data' });
+  try {
+    const result = await pool.query(
+      'INSERT INTO data (timestamp, umidade, temperatura, luz) VALUES ($1, $2, $3, $4) RETURNING *',
+      [timestamp, umidade, temperatura, luz]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Erro ao inserir dados:', err);
+    res.status(500).json({ error: 'Erro ao inserir dados' });
   }
+  
 });
 
 app.get('/data/last', async (req, res) => {
@@ -147,7 +143,7 @@ app.delete('/data', async (req, res) => {
 
 app.get('/token', async (req, res) => {
   try {
-    const result = '70yrmv'
+    const result = ['AF287EF','100200300']
     res.json(result);
   } catch (err) {
     console.error('Erro ao buscar token:', err);
