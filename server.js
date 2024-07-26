@@ -56,7 +56,17 @@ mqttClient.on('connect', () => {
 
 mqttClient.on('message', async (topic, message) => {
   try {
-    const payload = JSON.parse(message.toString());
+    // Verifique se a mensagem é uma string JSON válida
+    const messageString = message.toString();
+    let payload;
+
+    try {
+      payload = JSON.parse(messageString);
+    } catch (jsonError) {
+      console.error('Mensagem MQTT recebida não é um JSON válido:', messageString);
+      return; // Retorna para evitar processamento adicional
+    }
+
     let { umidade, temperatura, luz } = payload;
     const timestamp = new Date();
 
@@ -103,6 +113,33 @@ wss.on('connection', (ws) => {
 });
 
 // Endpoints REST existentes
+
+app.post('/test', async (req, res) => {
+  let { umidade, temperatura, luz } = req.body;
+  const timestamp = new Date();
+
+  // Substituir NaN por NULL para armazenar no banco de dados
+  if (isNaN(umidade)) {
+    umidade = null;
+  }
+  if (isNaN(temperatura)) {
+    temperatura = null;
+  }
+  if (isNaN(luz)) {
+    luz = null;
+  }
+
+  try {
+    const result = await pool.query(
+      'INSERT INTO data (timestamp, umidade, temperatura, luz) VALUES ($1, $2, $3, $4) RETURNING *',
+      [timestamp, umidade, temperatura, luz]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Erro ao inserir dados:', err);
+    res.status(500).json({ error: 'Erro ao inserir dados' });
+  }
+});
 
 app.post('/data', async (req, res) => {
   let { umidade, temperatura, luz } = req.body;
