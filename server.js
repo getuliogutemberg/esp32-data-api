@@ -56,7 +56,7 @@ mqttClient.on('connect', () => {
 
 mqttClient.on('message', async (topic, message) => {
   const payload = JSON.parse(message.toString());
-  const { umidade=0, temperatura=0, luz=0 } = payload;
+  const { umidade, temperatura, luz } = payload;
   const timestamp = new Date();
 
   try {
@@ -90,7 +90,7 @@ wss.on('connection', (ws) => {
 // Endpoints REST existentes
 
 app.post('/data', async (req, res) => {
-  const { umidade=0, temperatura=0, luz=0 } = req.body;
+  const { umidade, temperatura, luz } = req.body;
   const timestamp = new Date();
   
   try {
