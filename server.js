@@ -211,7 +211,7 @@ app.get('/setup', async (req, res) => {
       mqtt_port:"1883",
       mqtt_client: "ESP32Client",
       mqtt_topic: "esp32/sensores",
-      id: 007,   
+      id: 'ESP007',   
     };
 
     res.json(result);
