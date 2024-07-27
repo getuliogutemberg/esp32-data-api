@@ -209,10 +209,9 @@ app.get('/setup', async (req, res) => {
       wifi_credentials_str:"[{\"CLARO_2G287EF5\":\"AF287EF5\"},{\"CLARO_5G287EF5\":\"AF287EF5\"},{\"Getulio\":\"100200300\"}]",
       mqtt_server:"test.mosquitto.org",
       mqtt_port:"1883",
-     mqtt_client: "ESP32Client",
-mqtt_password: "ESP32Pass",
-mqtt_topic: "esp32/sensores",
-      
+      mqtt_client: "ESP32Client",
+      mqtt_topic: "esp32/sensores",
+      id: 007,   
     };
 
     res.json(result);
