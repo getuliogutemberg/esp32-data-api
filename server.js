@@ -44,16 +44,22 @@ const dispositivos = [
   // Adicione outros dispositivos aqui se necessário
 ];
 
-// Função para gerar o próximo ID disponível
+// Função para gerar o próximo ID disponível se o último dispositivo estiver ativado
 const getNextId = () => {
-  const ids = dispositivos.map(d => d.id);
-  let nextIdNumber = 1;
+  const lastDevice = dispositivos[dispositivos.length - 1];
   
-  while (ids.includes(`ESP${String(nextIdNumber).padStart(3, '0')}`)) {
-    nextIdNumber++;
+  if (lastDevice && lastDevice.ativado) {
+    const ids = dispositivos.map(d => d.id);
+    let nextIdNumber = 1;
+    
+    while (ids.includes(`ESP${String(nextIdNumber).padStart(3, '0')}`)) {
+      nextIdNumber++;
+    }
+    
+    return `ESP${String(nextIdNumber).padStart(3, '0')}`;
+  } else {
+    return lastDevice.id;
   }
-  
-  return `ESP${String(nextIdNumber).padStart(3, '0')}`;
 };
 
 const app = express();
@@ -240,7 +246,7 @@ app.get('/esp32/:id', (req, res) => {
   const dispositivo = dispositivos.find(d => d.id === id);
 
   if (dispositivo) {
-    dispositivo.ativado = true;
+    dispositivo.ativado = false;
     dispositivo.status = 'OFFLINE';
     res.json(dispositivo);
   } else {
