@@ -225,11 +225,10 @@ app.get('/data/last', async (req, res) => {
 // Rota para retornar as informações do dispositivo pelo ID
 app.get('/esp32/:id', (req, res) => {
   const id = req.params.id;
-
-  const dispositivo = dispositivos.filter((d) => d.id === id);
+  const dispositivo = dispositivos.find(d => d.id === id);
 
   if (dispositivo) {
-    res.json(dispositivo[0]);
+    res.json(dispositivo);
   } else {
     res.status(404).json({ error: 'Dispositivo não encontrado' });
   }
