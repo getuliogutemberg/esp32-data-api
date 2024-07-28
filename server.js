@@ -15,7 +15,7 @@ const dispositivos = [
     mqtt_server: 'test.mosquitto.org',
     mqtt_port: '1883',
     mqtt_client: 'ESP32Client',
-    mqtt_topic: 'esp32/sensores',
+    mqtt_topic: 'esp32/ESP001',
     sensores: [
       {
         id: '1',
@@ -40,9 +40,21 @@ const dispositivos = [
         ]
       }
     ]
-  },
+  }
   // Adicione outros dispositivos aqui se necessário
 ];
+
+// Função para gerar o próximo ID disponível
+const getNextId = () => {
+  const ids = dispositivos.map(d => d.id);
+  let nextIdNumber = 1;
+  
+  while (ids.includes(`ESP${String(nextIdNumber).padStart(3, '0')}`)) {
+    nextIdNumber++;
+  }
+  
+  return `ESP${String(nextIdNumber).padStart(3, '0')}`;
+};
 
 const app = express();
 app.use(cors());
@@ -222,12 +234,14 @@ app.get('/data/last', async (req, res) => {
   }
 });
 
-// Rota para retornar as informações do dispositivo pelo ID
+// Rota para retornar as informações do dispositivo pelo ID e ativar o dispositivo
 app.get('/esp32/:id', (req, res) => {
   const id = req.params.id;
   const dispositivo = dispositivos.find(d => d.id === id);
 
   if (dispositivo) {
+    dispositivo.ativado = true;
+    dispositivo.status = 'OFFLINE';
     res.json(dispositivo);
   } else {
     res.status(404).json({ error: 'Dispositivo não encontrado' });
@@ -254,11 +268,36 @@ app.delete('/data', async (req, res) => {
   }
 });
 
+// Rota para retornar as configurações iniciais com o próximo ID disponível
 app.get('/setup', async (req, res) => {
   try {
+    const nextId = getNextId();
+
+    // Criar um novo dispositivo com o próximo ID disponível
+    const novoDispositivo = {
+      id: nextId,
+      ativado: false,
+      status: 'OFFLINE',
+      nome: `Dispositivo ${nextId}`,
+      descricao: 'Descrição padrão do novo dispositivo.',
+      mqtt_server: 'test.mosquitto.org',
+      mqtt_port: '1883',
+      mqtt_client: 'ESP32Client',
+      mqtt_topic: `esp32/${nextId}`,
+      sensores: []
+    };
+
+    // Adicionar o novo dispositivo à lista de dispositivos
+    dispositivos.push(novoDispositivo);
+
+    // Preparar a resposta JSON com as credenciais Wi-Fi e o novo ID
     const result = {
-      wifi_credentials_str:"[{\"CLARO_2G287EF5\":\"AF287EF5\"},{\"CLARO_5G287EF5\":\"AF287EF5\"},{\"Getulio\":\"100200300\"}]",
-      id: 'ESP001',   
+      wifi_credentials_str: "[{\"CLARO_2G287EF5\":\"AF287EF5\"},{\"CLARO_5G287EF5\":\"AF287EF5\"},{\"Getulio\":\"100200300\"}]",
+      id: nextId,
+      // mqtt_server: novoDispositivo.mqtt_server,
+      // mqtt_port: novoDispositivo.mqtt_port,
+      // mqtt_client: novoDispositivo.mqtt_client,
+      // mqtt_topic: novoDispositivo.mqtt_topic
     };
 
     res.json(result);
