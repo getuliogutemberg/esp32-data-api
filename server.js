@@ -5,11 +5,14 @@ const { Pool } = require('pg');
 const mqtt = require('mqtt');
 const WebSocket = require('ws');
 
-// Dados de exemplo dos dispositivos
 const dispositivos = {
   'ESP007': {
     nome: 'Dispositivo ESP007',
     descricao: 'Este é um dispositivo de exemplo.',
+    mqtt_server: 'test.mosquitto.org',
+    mqtt_port: '1883',
+    mqtt_client: 'ESP32Client',
+    mqtt_topic: 'esp32/sensores',
     sensores: [
       {
         id: '1',
@@ -252,10 +255,6 @@ app.get('/setup', async (req, res) => {
   try {
     const result = {
       wifi_credentials_str:"[{\"CLARO_2G287EF5\":\"AF287EF5\"},{\"CLARO_5G287EF5\":\"AF287EF5\"},{\"Getulio\":\"100200300\"}]",
-      mqtt_server:"test.mosquitto.org",
-      mqtt_port:"1883",
-      mqtt_client: "ESP32Client",
-      mqtt_topic: "esp32/sensores",
       id: 'ESP007',   
     };
 
