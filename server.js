@@ -10,7 +10,7 @@ const dispositivos = [
     id: 'ESP001',
     ativado: true,
     status: 'ONLINE',
-    nome: 'Dispositivo ESP007',
+    nome: 'Dispositivo ESP001',
     descricao: 'Este é um dispositivo de exemplo.',
     mqtt_server: 'test.mosquitto.org',
     mqtt_port: '1883',
@@ -19,7 +19,7 @@ const dispositivos = [
     sensores: [
       {
         id: '1',
-        porta: 1,
+        porta: 33,
         nome: 'Sensor de Temperatura',
         tipo: 'temperatura',
         valor: '25°C',
@@ -30,7 +30,7 @@ const dispositivos = [
       },
       {
         id: '2',
-        porta: 2,
+        porta: 32,
         nome: 'Sensor de Umidade',
         tipo: 'umidade',
         valor: '60%',
@@ -225,10 +225,11 @@ app.get('/data/last', async (req, res) => {
 // Rota para retornar as informações do dispositivo pelo ID
 app.get('/esp32/:id', (req, res) => {
   const id = req.params.id;
-  const dispositivo = dispositivos[id];
+
+  const dispositivo = dispositivos.filter((d) => d.id === id);
 
   if (dispositivo) {
-    res.json(dispositivo.filter((d) => d.id === id)[0]);
+    res.json(dispositivo[0]);
   } else {
     res.status(404).json({ error: 'Dispositivo não encontrado' });
   }
