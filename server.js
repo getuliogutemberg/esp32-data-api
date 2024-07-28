@@ -8,8 +8,8 @@ const WebSocket = require('ws');
 const dispositivos = [
   {
     id: 'ESP001',
-    ativado: true,
-    status: 'ONLINE',
+    ativado: false,
+    status: 'offline',
     nome: 'Dispositivo ESP001',
     descricao: 'Este é um dispositivo de exemplo.',
     mqtt_server: 'test.mosquitto.org',
@@ -247,7 +247,7 @@ app.get('/esp32/:id', (req, res) => {
 
   if (dispositivo) {
     dispositivo.ativado = false;
-    dispositivo.status = 'OFFLINE';
+    dispositivo.status = 'offline';
     res.json(dispositivo);
   } else {
     res.status(404).json({ error: 'Dispositivo não encontrado' });
