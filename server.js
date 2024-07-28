@@ -183,7 +183,7 @@ app.get('/data/last', async (req, res) => {
   }
 });
 
-app.get('/esp32/007', async (req, res) => {
+app.get('/esp32/ESP007', async (req, res) => {
   try {
     const result = 'Hello, 007!';
     res.json(result);
