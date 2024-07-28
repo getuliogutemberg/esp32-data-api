@@ -246,8 +246,6 @@ app.get('/esp32/:id', (req, res) => {
   const dispositivo = dispositivos.find(d => d.id === id);
 
   if (dispositivo) {
-    dispositivo.ativado = false;
-    dispositivo.status = 'offline';
     res.json(dispositivo);
   } else {
     res.status(404).json({ error: 'Dispositivo não encontrado' });
