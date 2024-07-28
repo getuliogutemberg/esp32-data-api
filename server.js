@@ -5,8 +5,11 @@ const { Pool } = require('pg');
 const mqtt = require('mqtt');
 const WebSocket = require('ws');
 
-const dispositivos = {
-  'ESP007': {
+const dispositivos = [
+  {
+    id: 'ESP001',
+    ativado: true,
+    status: 'ONLINE',
     nome: 'Dispositivo ESP007',
     descricao: 'Este é um dispositivo de exemplo.',
     mqtt_server: 'test.mosquitto.org',
@@ -39,7 +42,7 @@ const dispositivos = {
     ]
   },
   // Adicione outros dispositivos aqui se necessário
-};
+];
 
 const app = express();
 app.use(cors());
@@ -225,7 +228,7 @@ app.get('/esp32/:id', (req, res) => {
   const dispositivo = dispositivos[id];
 
   if (dispositivo) {
-    res.json(dispositivo);
+    res.json(dispositivo.filter((d) => d.id === id)[0]);
   } else {
     res.status(404).json({ error: 'Dispositivo não encontrado' });
   }
@@ -255,7 +258,7 @@ app.get('/setup', async (req, res) => {
   try {
     const result = {
       wifi_credentials_str:"[{\"CLARO_2G287EF5\":\"AF287EF5\"},{\"CLARO_5G287EF5\":\"AF287EF5\"},{\"Getulio\":\"100200300\"}]",
-      id: 'ESP007',   
+      id: 'ESP001',   
     };
 
     res.json(result);
