@@ -183,6 +183,16 @@ app.get('/data/last', async (req, res) => {
   }
 });
 
+app.get('/esp32/007', async (req, res) => {
+  try {
+    const result = 'Hello, 007!';
+    res.json(result);
+  } catch (err) {
+    console.error('Erro ao buscar última leitura:', err);
+    res.status(500).json({ error: 'Erro ao buscar última leitura' });
+  }
+});
+
 app.get('/data', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM data ORDER BY timestamp');
