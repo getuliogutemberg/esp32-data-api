@@ -5,6 +5,39 @@ const { Pool } = require('pg');
 const mqtt = require('mqtt');
 const WebSocket = require('ws');
 
+// Dados de exemplo dos dispositivos
+const dispositivos = {
+  'ESP007': {
+    nome: 'Dispositivo ESP007',
+    descricao: 'Este é um dispositivo de exemplo.',
+    sensores: [
+      {
+        id: '1',
+        porta: 1,
+        nome: 'Sensor de Temperatura',
+        tipo: 'temperatura',
+        valor: '25°C',
+        data: [
+          { valor: '24°C', timestamp: '2024-07-27T10:00:00Z' },
+          { valor: '25°C', timestamp: '2024-07-28T10:00:00Z' }
+        ]
+      },
+      {
+        id: '2',
+        porta: 2,
+        nome: 'Sensor de Umidade',
+        tipo: 'umidade',
+        valor: '60%',
+        data: [
+          { valor: '55%', timestamp: '2024-07-27T10:00:00Z' },
+          { valor: '60%', timestamp: '2024-07-28T10:00:00Z' }
+        ]
+      }
+    ]
+  },
+  // Adicione outros dispositivos aqui se necessário
+};
+
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
@@ -183,13 +216,15 @@ app.get('/data/last', async (req, res) => {
   }
 });
 
-app.get('/esp32/ESP007', async (req, res) => {
-  try {
-    const result = 'Hello, esp32 ESP-007!';
-    res.json(result);
-  } catch (err) {
-    console.error('Erro ao buscar última leitura:', err);
-    res.status(500).json({ error: 'Erro ao buscar última leitura' });
+// Rota para retornar as informações do dispositivo pelo ID
+app.get('/esp32/:id', (req, res) => {
+  const id = req.params.id;
+  const dispositivo = dispositivos[id];
+
+  if (dispositivo) {
+    res.json(dispositivo);
+  } else {
+    res.status(404).json({ error: 'Dispositivo não encontrado' });
   }
 });
 
