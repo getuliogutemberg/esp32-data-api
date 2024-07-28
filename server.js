@@ -185,7 +185,7 @@ app.get('/data/last', async (req, res) => {
 
 app.get('/esp32/ESP007', async (req, res) => {
   try {
-    const result = 'Hello, 007!';
+    const result = 'Hello, esp32 ESP-007!';
     res.json(result);
   } catch (err) {
     console.error('Erro ao buscar última leitura:', err);
