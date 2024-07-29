@@ -67,9 +67,9 @@ app.use(cors());
 app.use(bodyParser.json());
 const port = 3000;
 
-// Configurações do banco de dados com linha de comando
+// Substitua a URL pelo valor correto fornecido pelo seu serviço de hospedagem
 const pool = new Pool({
-  connectionString: 'postgresql://memory_sp7i_user:hHkqDGZF86grDUhAWYQ77JvyDrB4FhTA@dpg-cqbq5qmehbks73dt9mu0-a/memory_sp7ii'
+  connectionString: 'postgresql://memory_sp7i_user:hHkqDGZF86grDUhAWYQ77JvyDrB4FhTA@dpg-cqbq5qmehbks73dt9mu0-a/memory_sp7i'
 });
 
 // Configurações do banco de dados
