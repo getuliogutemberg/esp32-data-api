@@ -203,20 +203,20 @@ wss.on('connection', (ws) => {
           case 'click':
               console.log(`${id} clicou em: X: ${data.x}, Y: ${data.y}`);
               positions.push({ id, x: data.x, y: data.y, click: true });
-              wss.clients.forEach((client) => client.send(JSON.stringify({ type: 'update_positions', positions })));
+              // wss.clients.forEach((client) => client.send(JSON.stringify({ type: 'update_positions', positions })));
               setTimeout(() => {
                   positions.push({ id, x: data.x, y: data.y, click: false });
-                  wss.clients.forEach((client) => client.send(JSON.stringify({ type: 'update_positions', positions })));
+                  // wss.clients.forEach((client) => client.send(JSON.stringify({ type: 'update_positions', positions })));
               }, 500);
               break;
           case 'scroll':
               
               console.log(`${id} rolou scroll: X: ${data.x}, Y: ${data.y}`);
               positions.push({ id, scroll: true ,scrollX: data.x, scrollY: data.y});
-              wss.clients.forEach((client) => client.send(JSON.stringify({ type: 'update_positions', positions })));
+              // wss.clients.forEach((client) => client.send(JSON.stringify({ type: 'update_positions', positions })));
               setTimeout(() => {
-                  position
-                  wss.clients.forEach((client) => client.send(JSON.stringify({ type: 'update_positions', positions })));
+                  positions.push({ id, scroll: false ,scrollX: data.x, scrollY: data.y});
+                  // wss.clients.forEach((client) => client.send(JSON.stringify({ type: 'update_positions', positions })));
               }, 500);
               break;
           case 'keydown':
