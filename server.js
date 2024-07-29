@@ -2,9 +2,11 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const { Pool } = require('pg');
+const http = require('http');
 const mqtt = require('mqtt');
 const WebSocket = require('ws');
-
+const { type } = require('os');
+const mqttClient = mqtt.connect('mqtt://test.mosquitto.org');
 const dispositivos = [
   {
     id: 'ESP001',
@@ -44,6 +46,8 @@ const dispositivos = [
   // Adicione outros dispositivos aqui se necessário
 ];
 
+const clients = new Map();
+
 // Função para gerar o próximo ID disponível se o último dispositivo estiver ativado
 const getNextId = () => {
   const lastDevice = dispositivos[dispositivos.length - 1];
@@ -65,17 +69,11 @@ const getNextId = () => {
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
-const port = 3000;
+const port = process.env.PORT || 3001;
 
 // Substitua a URL pelo valor correto fornecido pelo seu serviço de hospedagem
 const pool = new Pool({
-  connectionString: 'postgresql://getuliogutemberg:D294PZMt05wGxfDX3izUdhMctWfX1IjM@dpg-cqjh5t8gph6c7396rjb0-a.singapore-postgres.render.com/memoria',
-  ssl: { rejectUnauthorized: false , require: true , },
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
-  application_name: 'esp32-data-api',
-  
+  connectionString: 'postgresql://getuliogutemberg:D294PZMt05wGxfDX3izUdhMctWfX1IjM@dpg-cqjh5t8gph6c7396rjb0-a/memoria',
 });
 
 // Configurações do banco de dados
@@ -119,7 +117,7 @@ createTable();
 
 
 // Configuração do cliente MQTT
-const mqttClient = mqtt.connect('mqtt://test.mosquitto.org');
+
 
 mqttClient.on('connect', () => {
   console.log('Conectado ao broker MQTT');
@@ -133,9 +131,139 @@ mqttClient.on('connect', () => {
 
 
 
+
+// Configuração do WebSocket
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
+
+wss.on('connection', (ws) => {
+  
+  const id = Date.now();
+  clients.set(id, ws);
+  
+  console.log('Novo cliente conectado: ', id);
+
+  ws.on('message', (message) => {
+      const data = JSON.parse(message);
+      // Atualiza a posição do cliente
+    if (data.type === 'mousemove') {
+      const client = clients.get(id);
+      if (client) {
+        client.x = data.x;
+        client.y = data.y;
+      }
+    }
+
+    if (data.type === 'scroll') {
+      const client = clients.get(id);
+      if (client) {
+        client.x = client.x + data.x; ;
+        client.y = client.y + data.y;
+        client.scroll = true;
+        client.scrollX = data.x;
+        client.scrollY = data.y;
+      }
+    }
+
+    if (data.type === 'click') {
+      const client = clients.get(id);
+      if (client) {
+        client.clickX = data.x;
+        client.clickY = data.y;
+        client.click = true;
+      }
+    }
+
+
+     // Envia a atualização de todos os clientes
+     const positions = Array.from(clients.entries()).map(([clientId, client]) => ({
+      id: clientId,
+      x: client.x,
+      y: client.y,
+      click: client.click,
+      scroll: client.scroll,
+      scrollX: client.scrollX,
+      scrollY: client.scrollY,
+      clickX: client.clickX,
+      clickY: client.clickY
+    }));
+
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({ type: 'update_positions', positions }));
+      }
+    });
+
+      switch(data.type) {
+          case 'mousemove':
+              console.log(`${id} movimentou o mouse: X: ${data.x}, Y: ${data.y}`);
+              positions.push({ id, x: data.x, y: data.y });
+              wss.clients.forEach((client) => client.send(JSON.stringify({ type: 'update_positions', positions })));
+              break;
+          case 'click':
+              console.log(`${id} clicou em: X: ${data.x}, Y: ${data.y}`);
+              positions.push({ id, x: data.x, y: data.y, click: true });
+              wss.clients.forEach((client) => client.send(JSON.stringify({ type: 'update_positions', positions })));
+              setTimeout(() => {
+                  positions.push({ id, x: data.x, y: data.y, click: false });
+                  wss.clients.forEach((client) => client.send(JSON.stringify({ type: 'update_positions', positions })));
+              }, 500);
+              break;
+          case 'scroll':
+              
+              console.log(`${id} rolou scroll: X: ${data.x}, Y: ${data.y}`);
+              const  positionsAfterScroll = positions.filter(({ id: clientId }) => clientId === id).map(posicao => ({ ...posicao, scroll: true, scrollX: data.x, scrollY: data.y}));
+              positions.push(...positionsAfterScroll);
+              wss.clients.forEach((client) => client.send(JSON.stringify({ type: 'update_positions', positions })));
+              setTimeout(() => {
+                  positions.filter(({ id: clientId }) => clientId === id).map(posicao => ({ ...posicao, scroll: false }));
+                  wss.clients.forEach((client) => client.send(JSON.stringify({ type: 'update_positions', positions })));
+              }, 500);
+              break;
+          case 'keydown':
+              console.log(`${id} teclou: ${data.key}`);
+              break;
+          case 'keyup':
+              console.log(`${id} liberou: ${data.key}`);
+              break;
+          case 'touchstart':
+              console.log(`${id} tocou em: X: ${data.x}, Y: ${data.y}`);
+              break;
+          case 'touchend':
+              console.log(`${id} soltou toque em: X: ${data.x}, Y: ${data.y}`);
+              break;
+          case 'touchmove':
+              console.log(`${id} movimentou o toque em: X: ${data.x}, Y: ${data.y}`);
+              break;
+          case 'touchcancel':
+              console.log(`${id} cancelou o toque em: X: ${data.x}, Y: ${data.y}`);
+              break;
+          case 'touchleave':
+              console.log(`${id} deixou o toque em: X: ${data.x}, Y: ${data.y}`);
+              break;
+          case 'touchenter':
+              console.log(`${id} entrou no toque em: X: ${data.x}, Y: ${data.y}`);
+              break;
+          case 'div_click':
+              console.log(`${id} clicou em: X: ${data.x}, Y: ${data.y}, Título: ${data.title}`);
+              break;
+          default:
+              console.log(`${id} recebeu um evento desconhecido:`, data.type);
+      }
+  });
+
+  ws.on('close', () => {
+    console.log('Cliente ' + id + ' desconectado');
+    clients.delete(id);
+  });
+});
+    
+
 mqttClient.on('message', async (topic, message) => {
   try {
-    console.log('Mensagem MQTT recebida:', topic, message.toString());
+    // console.log('Mensagem MQTT recebida:', topic, message.toString());
+
+   
 
     // Remover caracteres de unidade antes de tentar fazer o parsing para JSON
     let cleanedMessage = message.toString()
@@ -147,6 +275,11 @@ mqttClient.on('message', async (topic, message) => {
     let payload;
     try {
       payload = JSON.parse(cleanedMessage);
+      wss.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify(payload));
+        }
+      });
     } catch (jsonError) {
       console.error('Mensagem MQTT recebida não é um JSON válido:', jsonError);
       return; // Retorna para evitar processamento adicional
@@ -172,38 +305,28 @@ mqttClient.on('message', async (topic, message) => {
       luz = null;
     }
 
-    try {
-      console.log(timestamp, umidade, temperatura, luz);
-      const result = await pool.query(
-        'INSERT INTO data (timestamp, umidade, temperatura, luz) VALUES ($1, $2, $3, $4) RETURNING *',
-        [timestamp, umidade, temperatura, luz]
-      );
-      // const insertedData = result.rows[0];
+    
+    // try {
+    //   const result = await pool.query(
+    //     'INSERT INTO data (timestamp, umidade, temperatura, luz) VALUES ($1, $2, $3, $4) RETURNING *',
+    //     [timestamp, umidade, temperatura, luz]
+    //   );
+    //   // const insertedData = result.rows[0];
       
-      // // Enviar dados para todos os clientes conectados via WebSocket
-      // wss.clients.forEach((client) => {
-      //   if (client.readyState === WebSocket.OPEN) {
-      //     client.send(JSON.stringify(insertedData));
-      //   }
-      // });
-    } catch (err) {
-      console.error('Erro ao inserir dados no banco de dados:', err);
-    }
+    //   // // Enviar dados para todos os clientes conectados via WebSocket
+    //   // wss.clients.forEach((client) => {
+    //   //   if (client.readyState === WebSocket.OPEN) {
+    //   //     client.send(JSON.stringify(insertedData));
+    //   //   }
+    //   // });
+    // } catch (err) {
+    //   console.error('Erro ao inserir dados no banco de dados:', err);
+    // }
   } catch (err) {
     console.error('Erro ao processar mensagem MQTT:', err.message);
   }
 });
 
-// Configuração do WebSocket
-const server = require('http').createServer(app);
-const wss = new WebSocket.Server({ server });
-
-wss.on('connection', (ws) => {
-  console.log('Novo cliente conectado via WebSocket');
-  ws.on('close', () => {
-    console.log('Cliente desconectado');
-  });
-});
 
 // Endpoints REST existentes
 
