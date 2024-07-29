@@ -134,7 +134,7 @@ mqttClient.on('connect', () => {
 
 // Configuração do WebSocket
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+const wss = new WebSocket.Server({ server , path: '/ws' });
 
 wss.on('connection', (ws) => {
   
