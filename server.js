@@ -212,11 +212,10 @@ wss.on('connection', (ws) => {
           case 'scroll':
               
               console.log(`${id} rolou scroll: X: ${data.x}, Y: ${data.y}`);
-              const  positionsAfterScroll = positions.filter(({ id: clientId }) => clientId === id).map(posicao => ({ ...posicao, scroll: true, scrollX: data.x, scrollY: data.y}));
-              positions.push(...positionsAfterScroll);
+              positions.push({ id, scroll: true ,scrollX: data.x, scrollY: data.y});
               wss.clients.forEach((client) => client.send(JSON.stringify({ type: 'update_positions', positions })));
               setTimeout(() => {
-                  positions.filter(({ id: clientId }) => clientId === id).map(posicao => ({ ...posicao, scroll: false }));
+                  positions.push({ id, scroll: false ,scrollX: data.x, scrollY: data.y});
                   wss.clients.forEach((client) => client.send(JSON.stringify({ type: 'update_positions', positions })));
               }, 500);
               break;
