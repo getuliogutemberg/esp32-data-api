@@ -215,7 +215,7 @@ wss.on('connection', (ws) => {
               positions.push({ id, scroll: true ,scrollX: data.x, scrollY: data.y});
               wss.clients.forEach((client) => client.send(JSON.stringify({ type: 'update_positions', positions })));
               setTimeout(() => {
-                  positions.push({ id, scroll: false ,scrollX: data.x, scrollY: data.y});
+                  position
                   wss.clients.forEach((client) => client.send(JSON.stringify({ type: 'update_positions', positions })));
               }, 500);
               break;
