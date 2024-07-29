@@ -67,16 +67,27 @@ app.use(cors());
 app.use(bodyParser.json());
 const port = 3000;
 
+// Configurações do banco de dados com linha de comando
 const pool = new Pool({
-  connectionString: 'postgresql://memory_sp7i_user:hHkqDGZF86grDUhAWYQ77JvyDrB4FhTA@dpg-cqbq5qmehbks73dt9mu0-a/memory_sp7i'
+  connectionString: 'postgresql://memory_sp7i_user:hHkqDGZF86grDUhAWYQ77JvyDrB4FhTA@dpg-cqbq5qmehbks73dt9mu0-a/memory_sp7ii'
 });
 
-pool.connect((err) => {
+// Configurações do banco de dados
+pool.on('connect', () => {
+  console.log('Conectado ao banco de dados');
+});
+
+pool.on('error', (err) => {
+  console.error('Erro no cliente do banco de dados:', err);
+});
+
+// Testar a conexão ao banco de dados
+pool.connect((err, client, release) => {
   if (err) {
-    console.error('Erro ao conectar ao banco de dados:', err);
-  } else {
-    console.log('Conectado ao banco de dados');
+    return console.error('Erro ao conectar ao banco de dados:', err);
   }
+  console.log('Conectado ao banco de dados com sucesso');
+  release();
 });
 
 const createTable = async () => {
@@ -99,33 +110,50 @@ const createTable = async () => {
 // Cria a tabela ao iniciar o servidor
 createTable();
 
+
+
 // Configuração do cliente MQTT
 const mqttClient = mqtt.connect('mqtt://test.mosquitto.org');
 
 mqttClient.on('connect', () => {
   console.log('Conectado ao broker MQTT');
-  mqttClient.subscribe('esp32/sensores', (err) => {
+  mqttClient.subscribe('esp32/ESP001', (err) => {
     if (err) {
-      console.error('Erro ao se inscrever no tópico MQTT:', err);
+      console.error('Erro ao se inscrever no tópico "esp32/ESP001" MQTT:', err);
     }
+    console.log('Inscrito no tópico MQTT "esp32/ESP001"');
   });
 });
 
+
+
 mqttClient.on('message', async (topic, message) => {
   try {
-    // Verifique se a mensagem é uma string JSON válida
-    const messageString = message.toString();
-    let payload;
+    console.log('Mensagem MQTT recebida:', topic, message.toString());
 
+    // Remover caracteres de unidade antes de tentar fazer o parsing para JSON
+    let cleanedMessage = message.toString()
+      .replace(/%/g, '')
+      .replace(/°C/g, '')
+      .replace(/ L/g, '');
+
+    // Verifique se a mensagem é uma string JSON válida
+    let payload;
     try {
-      payload = JSON.parse(messageString);
+      payload = JSON.parse(cleanedMessage);
     } catch (jsonError) {
-      console.error('Mensagem MQTT recebida não é um JSON válido:', messageString);
+      console.error('Mensagem MQTT recebida não é um JSON válido:', jsonError);
       return; // Retorna para evitar processamento adicional
     }
 
+    // Extrair e limpar dados
     let { umidade, temperatura, luz } = payload;
     const timestamp = new Date();
+
+    // Converter para números
+    umidade = parseFloat(umidade);
+    temperatura = parseFloat(temperatura);
+    luz = parseFloat(luz);
 
     // Substituir NaN por NULL para armazenar no banco de dados
     if (isNaN(umidade)) {
@@ -139,11 +167,13 @@ mqttClient.on('message', async (topic, message) => {
     }
 
     try {
+      console.log(timestamp, umidade, temperatura, luz);
       const result = await pool.query(
         'INSERT INTO data (timestamp, umidade, temperatura, luz) VALUES ($1, $2, $3, $4) RETURNING *',
         [timestamp, umidade, temperatura, luz]
       );
       const insertedData = result.rows[0];
+      
       // Enviar dados para todos os clientes conectados via WebSocket
       wss.clients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN) {
