@@ -69,7 +69,7 @@ const port = 3000;
 
 // Substitua a URL pelo valor correto fornecido pelo seu serviço de hospedagem
 const pool = new Pool({
-  connectionString: 'postgresql://getuliogutemberg:D294PZMt05wGxfDX3izUdhMctWfX1IjM@dpg-cqjh5t8gph6c7396rjb0-a/memoria'
+  connectionString: 'postgresql://getuliogutemberg:D294PZMt05wGxfDX3izUdhMctWfX1IjM@dpg-cqjh5t8gph6c7396rjb0-a.singapore-postgres.render.com/memoria'
 });
 
 // Configurações do banco de dados
