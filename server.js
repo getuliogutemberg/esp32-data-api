@@ -69,7 +69,13 @@ const port = 3000;
 
 // Substitua a URL pelo valor correto fornecido pelo seu serviço de hospedagem
 const pool = new Pool({
-  connectionString: 'postgresql://getuliogutemberg:D294PZMt05wGxfDX3izUdhMctWfX1IjM@dpg-cqjh5t8gph6c7396rjb0-a.singapore-postgres.render.com/memoria'
+  connectionString: 'postgresql://getuliogutemberg:D294PZMt05wGxfDX3izUdhMctWfX1IjM@dpg-cqjh5t8gph6c7396rjb0-a.singapore-postgres.render.com/memoria',
+  ssl: { rejectUnauthorized: false , require: true , },
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+  application_name: 'esp32-data-api',
+  
 });
 
 // Configurações do banco de dados
