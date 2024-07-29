@@ -69,7 +69,7 @@ const port = 3000;
 
 // Substitua a URL pelo valor correto fornecido pelo seu serviço de hospedagem
 const pool = new Pool({
-  connectionString: 'postgresql://memory_sp7i_user:hHkqDGZF86grDUhAWYQ77JvyDrB4FhTA@dpg-cqbq5qmehbks73dt9mu0-a/memory_sp7i'
+  connectionString: 'postgresql://getuliogutemberg:D294PZMt05wGxfDX3izUdhMctWfX1IjM@dpg-cqjh5t8gph6c7396rjb0-a/memoria'
 });
 
 // Configurações do banco de dados
@@ -95,10 +95,10 @@ const createTable = async () => {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS data (
         id SERIAL PRIMARY KEY,
-        timestamp TIMESTAMP,
-        umidade REAL,
-        temperatura REAL,
-        luz REAL
+        timestamp TIMESTAMP NOT NULL,
+        umidade NUMERIC,
+        temperatura NUMERIC,
+        luz NUMERIC
       )
     `);
     console.log('Tabela criada ou já existe');
@@ -172,14 +172,14 @@ mqttClient.on('message', async (topic, message) => {
         'INSERT INTO data (timestamp, umidade, temperatura, luz) VALUES ($1, $2, $3, $4) RETURNING *',
         [timestamp, umidade, temperatura, luz]
       );
-      const insertedData = result.rows[0];
+      // const insertedData = result.rows[0];
       
-      // Enviar dados para todos os clientes conectados via WebSocket
-      wss.clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify(insertedData));
-        }
-      });
+      // // Enviar dados para todos os clientes conectados via WebSocket
+      // wss.clients.forEach((client) => {
+      //   if (client.readyState === WebSocket.OPEN) {
+      //     client.send(JSON.stringify(insertedData));
+      //   }
+      // });
     } catch (err) {
       console.error('Erro ao inserir dados no banco de dados:', err);
     }
