@@ -8,7 +8,7 @@ const WebSocket = require('ws');
 const dispositivos = [
   {
     id: 'ESP001',
-    ativado: false,
+    ativado: true,
     status: 'offline',
     nome: 'Dispositivo ESP001',
     descricao: 'Este é um dispositivo de exemplo.',
